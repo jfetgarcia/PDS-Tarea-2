@@ -1,7 +1,6 @@
 
 import numpy as np
 
-
 def wav_file_open(file: str):
     with open(file, 'rb') as audio_file:
 
@@ -10,7 +9,6 @@ def wav_file_open(file: str):
         
         # Seperate the header of the wav file
         file_header = audio_file.read(read_pointer)
-        print(f"File header: {file_header}")
 
         if file_header[:4] != b'RIFF' or file_header[8:12] != b'WAVE' or file_header[12:16] != b'fmt ':
             raise ValueError("Invalid WAV file")
@@ -68,8 +66,72 @@ def wav_file_open(file: str):
 
         return wav_info, data
 
+def _open_wav_file(file: str):
+    if isinstance(file, str):
+        try:
+            info, data = wav_file_open(file)
+            return info, data
+        except FileNotFoundError:
+            return FileNotFoundError("Specify a valid .wav file to analyze")
+    else:
+        raise ValueError("Set 'file' parameter as a valid .wav string")
+
+
+def get_wav_sample_freq(file: str ='signal.wav', info: dict=None):
+    if info == None:
+        info, data = _open_wav_file(file)
+
+    sample_freq = info.get("num_samples_sec")
+    return sample_freq
+
+def get_wav_duration(file: str ='signal.wav', info: dict=None):
+    if info == None:
+        info, data = _open_wav_file(file)
+
+    data_chunk_size = info.get("data_chunk_size")
+    byte_rate = info.get("byte_rate")
+    duration = data_chunk_size / byte_rate
+
+    return duration
+
+def get_wav_num_channels(file: str ='signal.wav', info: dict=None):
+    if info == None:
+        info, data = _open_wav_file(file)
+
+    num_channels = info.get("num_channels")
+    return num_channels
+
+def data_bytes_to_fp(samples, bits_per_sample:int):
+
+    fp_samples = []
+
+    # PCM (8 bit) is the only unsigned format
+    if bits_per_sample == 8:
+        # At 8 bits, silence is at 128 not 0
+        zero_level = 128.0
+        for byte in samples:
+            fp_samples.append((byte - zero_level) / zero_level)
+
+        return(fp_samples)
+
+    bytes_per_sample = bits_per_sample // 8
+    data_range = 2 ** (bits_per_sample - 1)
+
+    for i in range(0, len(samples), bytes_per_sample):
+        raw = samples[i:i + bytes_per_sample]
+
+        value = int.from_bytes(raw, byteorder='little', signed=True)
+        fp_samples.append(value / data_range)
+
+    return(fp_samples)
 
 
 if __name__ == "__main__":
-    file_dict, audio_data = wav_file_open("./signal.wav")
-    print(file_dict)
+    try:
+        file_dict, audio_data = wav_file_open("signal.wav")
+        print(file_dict)
+        print(get_wav_sample_freq())
+        print(get_wav_duration())
+        print(data_bytes_to_fp(audio_data, file_dict.get("bits_per_sample")))
+    except FileNotFoundError:
+        print("No valid .wav file found. Exiting....")
