@@ -101,7 +101,7 @@ def get_wav_num_channels(file: str ='signal.wav', info: dict=None):
     num_channels = info.get("num_channels")
     return num_channels
 
-def data_bytes_to_fp(samples, bits_per_sample:int):
+def data_byte_to_fp(samples, bits_per_sample:int):
 
     fp_samples = []
 
