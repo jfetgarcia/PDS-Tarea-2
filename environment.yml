@@ -1,0 +1,6 @@
+name: pds-tarea2
+channels:
+  - conda-forge
+dependencies:
+  - python=3.14
+  - numpy
